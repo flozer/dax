@@ -11,7 +11,7 @@ const string question = "Explique o calculo a seguir de maneira resumida em term
 
 const int oneMinute = 60000; // tempo entre uma consulta e outra
 const int apiLimit = 20;     // uma conta free permite 20 requisicoes por minuto, caso precise de mais use a conta paga
-const bool dontOverwrite = true; // previse que descrições anteriores sejam apagadas
+const bool dontOverwrite = true; // previne que descrições anteriores sejam apagadas, caso queira que apague, mude para false;
 
 using (var client = new HttpClient()) {
     client.DefaultRequestHeaders.Clear();
