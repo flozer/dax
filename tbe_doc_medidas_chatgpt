@@ -19,13 +19,13 @@ using (var client = new HttpClient()) {
 
     int callCount = 0;
     
-    // if any measures are currently selected add those 
-    // to our collection
+    // caso queira documentar apenas algumas medidas, mantenha as mesmas selecionas no tabular editor para que 
+    // elas sejam adicionadas a coleção
     List<Measure> myMeasures = new List<Measure>();
     myMeasures.AddRange( Selected.Measures );
 
-    // if no measures were selected grab all of the
-    // measures in the model
+    // caso não tenha medidas selecionadas, pega todas as 
+    // medidas presentes no modelo de dados
     if ( myMeasures.Count == 0)
     {
        myMeasures.AddRange(Model.Tables.Where(t => t.Measures.Count() > 0).SelectMany(t => t.Measures));
