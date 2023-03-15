@@ -1,0 +1,57 @@
+#r "System.Net.Http"
+using System.Net.Http;
+using System.Text;
+using Newtonsoft.Json.Linq;
+
+// Você precisa logar em https://platform.openai.com/ para criar sua chave de API e colar abaixo, entre as aspas, sem os <>;
+const string apiKey = "<sua chave de api aqui>";
+const string uri = "https://api.openai.com/v1/completions";
+//Aqui você pede que o chatgpt dê a descrição, mudando essa linha vc consegue um comportamento diferente.;
+const string question = "Explique o calculo a seguir de maneira resumida em termos de negócio sem o nome da formula DAX:\n\n"; 
+
+const int oneMinute = 60000; // tempo entre uma consulta e outra
+const int apiLimit = 20;     // uma conta free permite 20 requisicoes por minuto, caso precise de mais use a compra paga
+const bool dontOverwrite = true; // previse que descrições anteriores sejam apagadas
+
+using (var client = new HttpClient()) {
+    client.DefaultRequestHeaders.Clear();
+    client.DefaultRequestHeaders.Add("Authorization", "Bearer " + apiKey);
+
+    int callCount = 0;
+    
+    // if any measures are currently selected add those 
+    // to our collection
+    List<Measure> myMeasures = new List<Measure>();
+    myMeasures.AddRange( Selected.Measures );
+
+    // if no measures were selected grab all of the
+    // measures in the model
+    if ( myMeasures.Count == 0)
+    {
+       myMeasures.AddRange(Model.Tables.Where(t => t.Measures.Count() > 0).SelectMany(t => t.Measures));
+    }
+
+        
+    foreach ( var m in myMeasures)
+    {
+        if (dontOverwrite && !string.IsNullOrEmpty(m.Description)) {continue; }
+        
+        var body = 
+        "{ \"prompt\": " + JsonConvert.SerializeObject(question + m.Expression ) + 
+            ",\"model\": \"text-davinci-003\" " +
+            ",\"temperature\": 1 " +
+            ",\"max_tokens\": 2048 " +
+            ",\"stop\": \".\" }";
+
+        var res = client.PostAsync(uri, new StringContent(body, Encoding.UTF8,"application/json"));
+        res.Result.EnsureSuccessStatusCode();
+        var result = res.Result.Content.ReadAsStringAsync().Result;
+        var obj = JObject.Parse(result);
+        var desc = obj["choices"][0]["text"].ToString().Trim();
+        m.Description = desc + "\n=====\n" + m.Expression;
+        
+        callCount++; // incrementa a variavel com o total de contagens
+        if ( callCount % apiLimit == 0) System.Threading.Thread.Sleep( oneMinute );
+    
+    }
+}
